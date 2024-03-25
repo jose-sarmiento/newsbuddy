@@ -5,6 +5,8 @@ interface Crawler {
     url: string;
 
     scrape: (htmlBody: string) => ScrapeData | undefined;
+
+    checkArticleExistence: (htmlBody: string, minDate: string, maxDate: string) => boolean;
 }
 
 export default Crawler;

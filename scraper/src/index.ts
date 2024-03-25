@@ -1,7 +1,10 @@
+import fs from "fs/promises";
 import CrawlerFactory from "./crawlers/crawler_factory";
 import { Crawler } from "./crawler";
 import { utcToZonedTime, format } from "date-fns-tz";
 import { Settings } from "./config/settings";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 (async () => {
     if (process.argv.length < 3) {
@@ -28,7 +31,7 @@ import { Settings } from "./config/settings";
     const endDateISO = format(currentDatePH, "yyyy-MM-dd'T'23:59:59XXX");
 
     const crawlerObj = new Crawler(crawler);
-    crawlerObj.crawlPage(startDateISO, endDateISO);
-    // const pages = await crawlPage(publication, publication, {})
-    // await fs.writeFile('./data.json', JSON.stringify(pages, null, 2), 'utf-8');
+    const pages = crawlerObj.crawlPage(startDateISO, endDateISO);
+
+    // await fs.writeFile("./data.json", JSON.stringify(pages, null, 2), "utf-8");
 })();

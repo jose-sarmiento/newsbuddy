@@ -1,7 +1,11 @@
 import { JSDOM } from "jsdom";
 import Crawler from "./crawler_interface";
 import { ScrapeData } from "../types/crawlerTypes";
+import { zonedTimeToUtc } from "date-fns-tz";
+import { parseISO, isWithinInterval } from "date-fns";
+import { Settings } from "../config/settings";
 
+// SEPARATE CLASS FOR PUBLICATION AND CRAWLER/SCRAPER
 class RapplerCrawler implements Crawler {
     publication = "rappler";
     url = "http://www.rappler.com";
@@ -22,6 +26,15 @@ class RapplerCrawler implements Crawler {
             rawBody,
             parsedBody,
         };
+    }
+    
+    getArticleCategory(article: HTMLElement) {
+        if (!article) return;
+
+        const articleCategory = article.querySelector(".post-single__category");
+        if (!articleCategory) return;
+
+        return articleCategory.textContent
     }
 
     getArticlePublishedDate(article: HTMLElement) {
@@ -54,6 +67,8 @@ class RapplerCrawler implements Crawler {
             return;
         }
 
+        const articleCategory = this.getArticleCategory(articleContainer);
+
         const content = articleBody.parsedBody;
         const rawContent = articleBody.rawBody;
 
@@ -69,6 +84,45 @@ class RapplerCrawler implements Crawler {
             rawContent,
             date_publish,
         };
+    }
+
+    private checkPublishedDate(
+        datePublished: Date,
+        startDate: string,
+        endDate: string
+    ) {
+        const dateStartUTC = zonedTimeToUtc(
+            parseISO(startDate),
+            Settings.timezone
+        );
+        const dateEndUTC = zonedTimeToUtc(parseISO(endDate), Settings.timezone);
+
+        return isWithinInterval(datePublished, {
+            start: dateStartUTC,
+            end: dateEndUTC,
+        });
+    }
+
+    checkArticleExistence(htmlBody: string, minDate: string, maxDate: string) {
+        const document = new JSDOM(htmlBody).window.document;
+        const articles = document.querySelectorAll("article")
+
+        if (articles.length == 0) return false
+
+        for(let i=0; i < articles.length; i++) {
+            let datePublished: Date | string | undefined = articles[i].querySelector("time")?.dateTime
+
+            if (!datePublished) continue;
+
+            try {
+                datePublished = new Date(datePublished);
+                if (this.checkPublishedDate(datePublished, minDate, maxDate)) return true;
+            } catch (error) {
+                continue;
+            }
+        }
+
+        return false;
     }
 }
 

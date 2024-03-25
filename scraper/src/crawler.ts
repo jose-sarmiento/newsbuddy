@@ -3,18 +3,23 @@ import CrawlerInterface from "./crawlers/crawler_interface";
 import { zonedTimeToUtc } from "date-fns-tz";
 import { parseISO, isWithinInterval } from "date-fns";
 import { Settings } from "./config/settings";
+import { ScrapeData } from "./types/crawlerTypes";
+import { BaseCrawler } from "./crawlers/base";
 
-class Crawler {
-    constructor(private pubCrawler: CrawlerInterface) {}
+class Crawler extends BaseCrawler {
+    constructor(private pubCrawler: CrawlerInterface) {
+        super();
+    }
 
     crawlPage(startDate: string, endDate: string) {
-        this.crawl(
+        const urls = this.crawl(
             this.pubCrawler.url,
             this.pubCrawler.url,
             {},
             startDate,
             endDate
         );
+        return urls;
     }
 
     private async crawl(
@@ -39,8 +44,6 @@ class Crawler {
 
         pages[normalizeCurrentUrl] = 1;
 
-        console.log(`actively crawling: ${currentUrl}`);
-
         try {
             const response: Response = await fetch(currentUrl);
             if (response.status > 399) {
@@ -55,32 +58,30 @@ class Crawler {
             }
 
             const htmlBody = await response.text();
-            console.log("scraping");
-            const data = this.pubCrawler.scrape(htmlBody);
-
-            if (!data) return pages;
-
-            const dateStartUTC = zonedTimeToUtc(
-                parseISO(startDate),
-                Settings.timezone
-            );
-            const dateEndUTC = zonedTimeToUtc(
-                parseISO(endDate),
-                Settings.timezone
-            );
-
-            const isWithin = isWithinInterval(data.date_publish, {
-                start: dateStartUTC,
-                end: dateEndUTC,
-            });
-
-            if (!isWithin) {
-                console.log("Got an article but not in given range");
-                return pages;
+            
+            const hasArticlesAndLatest = this.pubCrawler.checkArticleExistence(htmlBody, startDate, endDate);
+            
+            if (!hasArticlesAndLatest) return pages;
+            console.log(`actively crawling: ${currentUrl}`);
+            
+            let data = this.pubCrawler.scrape(htmlBody);
+            if (data) {
+                const isWithin = this.checkPublishedDate(
+                    data.date_publish,
+                    startDate,
+                    endDate
+                );
+                if (!isWithin) {
+                    console.log("Got an article but not in given range");
+                    return pages;
+                }
+                this.save(data);
             }
 
             const next_urls = this.getUrlsFromHtml(htmlBody, baseUrl);
-            for (const next_url of next_urls) {
+            const pubHost = new URL(baseUrl).host
+            const filteredUrls = next_urls.filter(url => url.includes(pubHost))
+            for (const next_url of filteredUrls) {
                 pages = await this.crawl(
                     baseUrl,
                     next_url,
@@ -136,6 +137,23 @@ class Crawler {
         }
 
         return cleanedUrl;
+    }
+
+    private checkPublishedDate(
+        datePublished: Date,
+        startDate: string,
+        endDate: string
+    ) {
+        const dateStartUTC = zonedTimeToUtc(
+            parseISO(startDate),
+            Settings.timezone
+        );
+        const dateEndUTC = zonedTimeToUtc(parseISO(endDate), Settings.timezone);
+
+        return isWithinInterval(datePublished, {
+            start: dateStartUTC,
+            end: dateEndUTC,
+        });
     }
 }
 

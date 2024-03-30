@@ -3,8 +3,13 @@ import Crawler from "./crawler";
 import { utcToZonedTime, format } from "date-fns-tz";
 import { Settings } from "./config/settings";
 import Registry from "./registry";
+import Rappler from "./publications/rappler";
 
-(async () => {
+function init() {
+    Registry.registerPublication("rappler", Rappler);
+}
+
+async function main() {
     if (process.argv.length < 3) {
         console.log("No publication provided");
         process.exit(1);
@@ -14,6 +19,8 @@ import Registry from "./registry";
         console.log("Too many arguments, supported 3");
         process.exit(1);
     }
+
+    init();
 
     const Publication = Registry.getPublication(process.argv[2].trim());
     if (!Publication) {
@@ -30,4 +37,6 @@ import Registry from "./registry";
     const pages = crawlerObj.run(startDateISO, endDateISO);
 
     // await fs.writeFile("./data.json", JSON.stringify(pages, null, 2), "utf-8");
-})();
+}
+
+main();

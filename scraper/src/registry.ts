@@ -1,17 +1,22 @@
-import Rappler from "./publications/rappler";
 import { PublicationI } from "./types";
 
-class Registry {
-    private static publications: { [key: string]: new () => PublicationI } = {
-        rappler: Rappler,
-    };
+type PublicationClass = new () => PublicationI;
 
-    static getPublication(publication: string): PublicationI | null {
-        const PublicationClass = Registry.publications[publication];
-        if (PublicationClass) {
-            return new PublicationClass();
-        }
-        return null;
+class Registry {
+    private static publications: Map<string, PublicationClass> = new Map();
+
+    static registerPublication(
+        name: string,
+        PublicationClass: PublicationClass
+    ): void {
+        Registry.publications.set(name, PublicationClass);
+    }
+
+    static getPublication(name: string): PublicationI | undefined {
+        const PublicationClass = Registry.publications.get(name.toLowerCase());
+        if (!PublicationClass) return;
+
+        return new PublicationClass();
     }
 }
 

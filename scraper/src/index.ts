@@ -1,10 +1,8 @@
 import fs from "fs/promises";
-import CrawlerFactory from "./crawlers/crawler_factory";
-import { Crawler } from "./crawler";
+import Crawler from "./crawler";
 import { utcToZonedTime, format } from "date-fns-tz";
 import { Settings } from "./config/settings";
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+import Registry from "./registry";
 
 (async () => {
     if (process.argv.length < 3) {
@@ -17,21 +15,19 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
         process.exit(1);
     }
 
-    const publicationName = process.argv[2];
-    const crawler = CrawlerFactory.createCrawler(publicationName);
-    if (!crawler) {
+    const Publication = Registry.getPublication(process.argv[2].trim());
+    if (!Publication) {
         console.log("Publication not supported");
         process.exit(1);
     }
 
-    console.log(`Started crawling ${crawler.publication}`);
+    console.log(`Started crawling ${Publication.name}`);
 
     const currentDatePH = utcToZonedTime(new Date(), Settings.timezone);
     const startDateISO = format(currentDatePH, "yyyy-MM-dd'T'00:00:00XXX");
     const endDateISO = format(currentDatePH, "yyyy-MM-dd'T'23:59:59XXX");
-
-    const crawlerObj = new Crawler(crawler);
-    const pages = crawlerObj.crawlPage(startDateISO, endDateISO);
+    const crawlerObj = new Crawler(Publication);
+    const pages = crawlerObj.run(startDateISO, endDateISO);
 
     // await fs.writeFile("./data.json", JSON.stringify(pages, null, 2), "utf-8");
 })();

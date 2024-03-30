@@ -15,3 +15,18 @@ export function checkPublishedDate(
         end: dateEndUTC,
     });
 }
+
+export function isWithinElapsed(dateStringIso: string, elapsedSeconds: number) {
+    try {
+        const inputDate = new Date(dateStringIso);
+        const inputDateUTC = inputDate.getTime();
+        const nowUTC = Date.now();
+
+        const diffSeconds = Math.abs(nowUTC - inputDateUTC) / 1000;
+
+        return diffSeconds <= elapsedSeconds;
+    } catch (error) {
+        console.error(`Invalid date string provided: ${dateStringIso}`);
+        return false;
+    }
+}

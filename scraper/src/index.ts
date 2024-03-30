@@ -40,3 +40,4 @@ async function main() {
 }
 
 main();
+// today or past ago

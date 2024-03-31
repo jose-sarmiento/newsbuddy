@@ -9,7 +9,7 @@ export const normalizeUrl = (url: string): string | undefined => {
 
         if (cleanedUrl === "blank") return;
 
-        return "http://" + cleanedUrl;
+        return "https://" + cleanedUrl;
     } catch (error: unknown) {
         if (error instanceof Error) {
             console.error(`Invalid URL: ${url}`);

@@ -2,9 +2,10 @@
   "name": "scraper",
   "version": "1.0.0",
   "description": "Scraper | Daily News Buddy",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
+    "start": "node  ./dist/index.js",
     "dev": "ts-node ./src/index.ts",
     "test": "jest --verbose"
   },

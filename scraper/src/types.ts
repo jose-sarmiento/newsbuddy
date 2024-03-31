@@ -42,3 +42,21 @@ export type ArticleLinkT = {
     datePublished: Date;
     articleUrl: string;
 };
+
+export type DateRange = {
+    startDate: string;
+    endDate: string;
+    type: "range";
+};
+
+export type ElapsedTime = {
+    elapsedInMinutes: number;
+    type: "elapsed";
+};
+
+export type DateInput = DateRange | ElapsedTime;
+
+export type CommandLineArgsT = {
+    publication: string;
+    dateInput: DateRange | ElapsedTime;
+};

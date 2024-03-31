@@ -1,20 +1,30 @@
 import { promises as fs } from "fs";
 
-import { ArticleT, PublicationI, ScrapeUrls } from "./types";
-import { checkPublishedDate } from "./utils/dates";
+import {
+    ArticleLinkT,
+    ArticleT,
+    DateInput,
+    PublicationI,
+    ScrapeUrls,
+    ScraperI,
+} from "./types";
+import {
+    checkPublishedDate,
+    isWithinElapsed,
+    isWithinRange,
+} from "./utils/dates";
 import { normalizeUrl } from "./utils/urls";
 
 class Crawler {
     constructor(private publication: PublicationI) {}
 
-    async run(startDate: string, endDate: string) {
+    async run(dateInput: DateInput) {
         const scrapeUrls = this.publication.getExistingUrls();
 
         const urls = await this.crawl(
             this.publication.baseUrl,
             scrapeUrls,
-            startDate,
-            endDate,
+            dateInput,
             1,
             this.publication.baseUrl
         );
@@ -25,8 +35,7 @@ class Crawler {
     private async crawl(
         currentUrl: string,
         scrapeUrls: ScrapeUrls,
-        startDate: string,
-        endDate: string,
+        dateInput: DateInput,
         depth: number,
         parent: string
     ) {
@@ -59,7 +68,7 @@ class Crawler {
             if (!articles || articles.length === 0) return scrapeUrls;
 
             const hasArticlesAndLatest = articles.filter((article) =>
-                checkPublishedDate(article.datePublished, startDate, endDate)
+                this.checkDate(article, dateInput)
             );
 
             // if there is article and published date is out of range return
@@ -85,14 +94,7 @@ class Crawler {
 
             if (articles) {
                 const outdatedAricles = articles
-                    .filter(
-                        (article) =>
-                            !checkPublishedDate(
-                                article.datePublished,
-                                startDate,
-                                endDate
-                            )
-                    )
+                    .filter((article) => !this.checkDate(article, dateInput))
                     .map((el) => el.articleUrl);
 
                 if (outdatedAricles.length > 0) {
@@ -108,8 +110,7 @@ class Crawler {
                         this.crawl(
                             url,
                             scrapeUrls,
-                            startDate,
-                            endDate,
+                            dateInput,
                             depth + 1,
                             currentUrl
                         )
@@ -142,6 +143,21 @@ class Crawler {
         } catch (error) {
             console.error(error);
             return;
+        }
+    }
+
+    private checkDate(article: ArticleT | ArticleLinkT, dateInput: DateInput) {
+        if (dateInput.type === "range") {
+            return isWithinRange(
+                article.datePublished.toISOString(),
+                dateInput.startDate,
+                dateInput.endDate
+            );
+        } else {
+            return isWithinElapsed(
+                article.datePublished.toISOString(),
+                dateInput.elapsedInMinutes
+            );
         }
     }
 }

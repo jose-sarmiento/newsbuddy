@@ -30,3 +30,24 @@ export function isWithinElapsed(dateStringIso: string, elapsedSeconds: number) {
         return false;
     }
 }
+
+export function isWithinRange(
+    datetimeIso: string,
+    startDatetimeIso: string,
+    endDatetimeIso: string
+) {
+    try {
+        const datetime = new Date(datetimeIso);
+        const startDatetime = new Date(startDatetimeIso);
+        const endDatetime = new Date(endDatetimeIso);
+
+        const datetimeUTC = datetime.getTime();
+        const startDatetimeUTC = startDatetime.getTime();
+        const endDatetimeUTC = endDatetime.getTime();
+
+        return datetimeUTC >= startDatetimeUTC && datetimeUTC <= endDatetimeUTC;
+    } catch (error: any) {
+        console.error(`Error occurred: ${error}`);
+        return false;
+    }
+}

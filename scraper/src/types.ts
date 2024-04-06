@@ -4,6 +4,7 @@ export interface PublicationI {
     name: string;
     displayName: string;
     baseUrl: string;
+    excluded: string[]
 
     saveArticle: (article: ArticleT) => void;
 

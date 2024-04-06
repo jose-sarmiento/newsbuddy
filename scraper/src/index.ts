@@ -1,8 +1,9 @@
-import fs from "fs";
+import fs from "fs/promises";
 import Registry from "./registry";
 import Rappler from "./publications/rappler";
 import { extractCommandLineArgs } from "./utils/cli";
 import Crawler from "./crawler";
+import logger from "./config/logger";
 
 function registerPublications() {
     Registry.registerPublication("rappler", Rappler);
@@ -16,16 +17,16 @@ async function main() {
 
     const Publication = Registry.getPublication(process.argv[2].trim());
     if (!Publication) {
-        console.log("Publication not supported");
+        logger.info("Publication not supported");
         process.exit(1);
     }
 
-    console.log(`Started crawling ${Publication.name}`);
+    logger.info(`Started crawling ${Publication.name}`);
 
     const crawlerObj = new Crawler(Publication);
-    const pages = crawlerObj.run(inputData.dateInput);
+    const pages = await crawlerObj.run(inputData.dateInput);
 
-    await fs.writeFile("./data.json", JSON.stringify(pages, null, 2), () => {});
+    await fs.writeFile("./data.json", JSON.stringify(pages));
 }
 
 main();

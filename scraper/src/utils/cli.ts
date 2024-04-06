@@ -1,3 +1,4 @@
+import logger from "../config/logger";
 import { CommandLineArgsT } from "../types";
 
 export function extractCommandLineArgs(
@@ -6,7 +7,7 @@ export function extractCommandLineArgs(
     const args = argvs.slice(2);
 
     if (args.length < 2) {
-        console.error(
+        logger.error(
             "Usage: npm run dev <publication> (--elapse=<minutes> | --start=<datetimeUTC> --end=<datetimeUTC>)"
         );
         return;
@@ -18,7 +19,7 @@ export function extractCommandLineArgs(
     if (option.startsWith("--elapse=")) {
         const elapsedMinutes = parseInt(option.substring(9));
         if (isNaN(elapsedMinutes)) {
-            console.error("Invalid elapsed time value.");
+            logger.error("Invalid elapsed time value.");
             return;
         }
 
@@ -34,7 +35,7 @@ export function extractCommandLineArgs(
         const endDateOption = args[2];
 
         if (!endDateOption || !endDateOption.startsWith("--end=")) {
-            console.error("Invalid option. Expected --end=<datetimeUTC>.");
+            logger.error("Invalid option. Expected --end=<datetimeUTC>.");
             return;
         }
 
@@ -49,7 +50,7 @@ export function extractCommandLineArgs(
             },
         };
     } else {
-        console.error(
+        logger.error(
             "Invalid option. Supported options are --elapse=<minutes> or --start=<datetimeUTC> --end=<datetimeUTC>."
         );
         return;

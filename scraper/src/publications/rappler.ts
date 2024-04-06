@@ -16,6 +16,7 @@ class Rappler implements PublicationI {
     displayName = "Rappler";
     baseUrl = "http://www.rappler.com";
     filename = "out.jsonl";
+    excluded = [];
 
     async saveArticle(article: ArticleT) {
         await appendJsonToFile(this.filename, article);

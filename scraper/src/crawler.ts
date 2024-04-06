@@ -1,19 +1,17 @@
-import { promises as fs } from "fs";
-
+import fs from "fs/promises";
 import {
     ArticleLinkT,
     ArticleT,
     DateInput,
     PublicationI,
     ScrapeUrls,
-    ScraperI,
 } from "./types";
 import {
-    checkPublishedDate,
     isWithinElapsed,
     isWithinRange,
 } from "./utils/dates";
 import { normalizeUrl } from "./utils/urls";
+import logger from "./config/logger";
 
 class Crawler {
     constructor(private publication: PublicationI) {}
@@ -50,13 +48,11 @@ class Crawler {
 
         scrapeUrls[normalizeCurrentUrl] = 1;
 
-        console.log(
-            `Depth: ${depth}, Parent: ${parent}, CHild: actively crawling ${currentUrl}`
-        );
+        logger.info(`actively crawling ${currentUrl}`);
 
         try {
             const htmlString = await this.getHTMLBody(normalizeCurrentUrl);
-            if (!htmlString) return;
+            if (!htmlString) return scrapeUrls;
 
             const scraper = this.publication.getScraper(
                 htmlString,
@@ -118,7 +114,7 @@ class Crawler {
                 );
             }
         } catch (err) {
-            console.log(`error in fetch: ${currentUrl} ${err}`);
+            logger.info(`error in fetch: ${currentUrl} ${err}`);
         }
 
         return scrapeUrls;
@@ -128,13 +124,13 @@ class Crawler {
         try {
             const response: Response = await fetch(url);
             if (response.status > 399) {
-                console.log(`error in fetch: ${url} ${response.status}`);
+                logger.info(`error in fetch: ${url} ${response.status}`);
                 return;
             }
 
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("text/html")) {
-                console.log(`expected text/html but got ${contentType}`);
+                logger.info(`expected text/html but got ${contentType}`);
                 return;
             }
 
@@ -156,7 +152,7 @@ class Crawler {
         } else {
             return isWithinElapsed(
                 article.datePublished.toISOString(),
-                dateInput.elapsedInMinutes
+                (dateInput.elapsedInMinutes * 60)
             );
         }
     }

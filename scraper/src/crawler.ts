@@ -6,10 +6,7 @@ import {
     PublicationI,
     ScrapeUrls,
 } from "./types";
-import {
-    isWithinElapsed,
-    isWithinRange,
-} from "./utils/dates";
+import { isWithinElapsed, isWithinRange } from "./utils/dates";
 import { normalizeUrl } from "./utils/urls";
 import logger from "./config/logger";
 
@@ -23,8 +20,7 @@ class Crawler {
             this.publication.baseUrl,
             scrapeUrls,
             dateInput,
-            1,
-            this.publication.baseUrl
+            1
         );
 
         return urls;
@@ -34,8 +30,7 @@ class Crawler {
         currentUrl: string,
         scrapeUrls: ScrapeUrls,
         dateInput: DateInput,
-        depth: number,
-        parent: string
+        depth: number
     ) {
         if (depth === 10) return scrapeUrls;
         const normalizeCurrentUrl = normalizeUrl(currentUrl);
@@ -103,13 +98,7 @@ class Crawler {
             if (nextUrls.length > 0) {
                 await Promise.all(
                     nextUrls.map((url) =>
-                        this.crawl(
-                            url,
-                            scrapeUrls,
-                            dateInput,
-                            depth + 1,
-                            currentUrl
-                        )
+                        this.crawl(url, scrapeUrls, dateInput, depth + 1)
                     )
                 );
             }
@@ -152,7 +141,7 @@ class Crawler {
         } else {
             return isWithinElapsed(
                 article.datePublished.toISOString(),
-                (dateInput.elapsedInMinutes * 60)
+                dateInput.elapsedInMinutes * 60
             );
         }
     }

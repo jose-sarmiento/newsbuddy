@@ -88,10 +88,13 @@ class RapplerScraper extends BaseScraper implements ScraperI {
             } else {
                 cleanedUrl = normalizeUrl(link.href);
             }
+
+            if (!cleanedUrl) continue;
+
+            const urlObject = new URL(cleanedUrl);
             if (
-                cleanedUrl &&
-                new URL(cleanedUrl).host ===
-                    new URL(this.publication.baseUrl).host
+                urlObject.host === new URL(this.publication.baseUrl).host &&
+                !this.publication.excluded.includes(cleanedUrl)
             )
                 urls.push(cleanedUrl);
         }

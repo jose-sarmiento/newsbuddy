@@ -16,7 +16,22 @@ class Rappler implements PublicationI {
     displayName = "Rappler";
     baseUrl = "http://www.rappler.com";
     filename = "out.jsonl";
-    excluded = [];
+    excluded = [
+        "https://www.rappler.com/offers",
+        "https://www.rappler.com/about-plus-membership-program",
+        "https://www.rappler.com/about/the-people-behind-rappler",
+        "https://www.rappler.com/board-of-directors",
+        "https://www.rappler.com/section/about",
+        "https://www.rappler.com/about",
+        "https://www.rappler.com/about/mission-statement-journalism-communities-technology",
+        "https://www.rappler.com/about/standards-guidelines-corrections-fact-check-content-comment-moderation",
+        "https://www.rappler.com/about/guidelines-artificial-intelligence-usage-development",
+        "https://www.rappler.com/about-rappler/about-us/21743-rappler-team",
+        "https://www.rappler.com/about-rappler/about-us/1557-contact-us",
+        "https://www.rappler.com/about/rappler-privacy-statement",
+        "https://www.rappler.com/about/rappler-community-and-site-use-rules",
+        "https://www.rappler.com/about/27506-community-guidelines",
+    ];
 
     async saveArticle(article: ArticleT) {
         await appendJsonToFile(this.filename, article);

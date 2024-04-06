@@ -1,0 +1,27 @@
+services:
+  scraper:  
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    volumes:
+      - ./scraper:/app
+    depends_on:
+      - redis
+      - mongo
+    command: npm run dev rappler -- --elapse=360
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - data:/data      
+  redis:
+    image: redis
+    volumes:
+      - redis:/data
+    ports:
+      - 6379:6379
+volumes:
+  data:
+  redis:

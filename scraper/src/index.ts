@@ -24,9 +24,11 @@ async function main() {
     logger.info(`Started crawling ${Publication.name}`);
 
     const crawlerObj = new Crawler(Publication);
-    const pages = await crawlerObj.run(inputData.dateInput);
+    const _ = await crawlerObj.run(inputData.dateInput);
+    // can be use to report which urls have been crawled and how many times they have been crawled
+    // await fs.writeFile("./data.json", JSON.stringify(pages));
 
-    await fs.writeFile("./data.json", JSON.stringify(pages));
+    Publication.closeConnections();
 }
 
 main();

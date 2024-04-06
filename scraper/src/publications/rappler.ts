@@ -1,21 +1,14 @@
-import { promises as fs } from "fs";
 import RapplerScraper from "../scrapers/rappler";
 import { ArticleT, PublicationI, ScraperI } from "../types";
+import BasePublication from "./base";
 
-async function appendJsonToFile(filename: string, data: object): Promise<void> {
-    try {
-        const jsonLine = JSON.stringify(data) + "\n";
-        await fs.appendFile(filename, jsonLine);
-    } catch (error) {
-        console.error("Error appending to file:", error);
-    }
-}
-
-class Rappler implements PublicationI {
+class Rappler extends BasePublication implements PublicationI {
     name = "rappler";
     displayName = "Rappler";
-    baseUrl = "http://www.rappler.com";
-    filename = "out.jsonl";
+    baseUrl = "https://www.rappler.com";
+    articlesQueue: string;
+    scrapedUrlsKey: string;
+
     excluded = [
         "https://www.rappler.com/offers",
         "https://www.rappler.com/about-plus-membership-program",
@@ -33,8 +26,33 @@ class Rappler implements PublicationI {
         "https://www.rappler.com/about/27506-community-guidelines",
     ];
 
+    constructor() {
+        super();
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
+            day: "2-digit",
+        });
+        this.articlesQueue = `rappler:articles:${formattedDate
+            .toLowerCase()
+            .replace(/ /g, "-")
+            .replace(/,/g, "")}`;
+        this.scrapedUrlsKey = `rappler:article_urls:${formattedDate
+            .toLowerCase()
+            .replace(/ /g, "-")
+            .replace(/,/g, "")}`;
+    }
+
     async saveArticle(article: ArticleT) {
-        await appendJsonToFile(this.filename, article);
+        const exists = this.redis?.sismember(
+            this.scrapedUrlsKey,
+            article.articleUrl
+        );
+        if (!exists) {
+            this.redis?.sadd(this.scrapedUrlsKey, article.articleUrl);
+            this.redis?.lpush(this.articlesQueue, JSON.stringify(article));
+        }
     }
 
     getScraper(html: string, publication: PublicationI): ScraperI {

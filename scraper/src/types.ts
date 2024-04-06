@@ -4,13 +4,17 @@ export interface PublicationI {
     name: string;
     displayName: string;
     baseUrl: string;
-    excluded: string[]
+    excluded: string[];
+    articlesQueue: string;
+    scrapedUrlsKey: string;
 
     saveArticle: (article: ArticleT) => void;
 
     getScraper: (html: string, publication: PublicationI) => ScraperI;
 
     getExistingUrls: () => ScrapeUrls;
+
+    closeConnections: () => void;
 }
 
 export interface ScraperI {

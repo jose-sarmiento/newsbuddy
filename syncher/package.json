@@ -1,0 +1,26 @@
+{
+  "name": "syncher",
+  "version": "1.0.0",
+  "description": "Syncher | Daily News Buddy",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node  ./dist/index.js",
+    "dev": "ts-node ./src/index.ts",
+    "test": "jest --verbose"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@types/node": "^20.11.30",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
+  },
+  "dependencies": {
+    "ioredis": "^5.3.2"
+  }
+}

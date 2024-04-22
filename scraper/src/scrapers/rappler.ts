@@ -22,7 +22,7 @@ class RapplerScraper extends BaseScraper implements ScraperI {
         const titleElement = article.querySelector(this.titleSelector);
         if (!titleElement) return;
 
-        return titleElement.textContent || "";
+        return titleElement.textContent?.replace(/\s+/g, " ").trim() || "";
     }
 
     scrapeContent(article: Element) {
@@ -72,7 +72,7 @@ class RapplerScraper extends BaseScraper implements ScraperI {
         const articleCategory = article.querySelector(this.categorySelector);
         if (!articleCategory) return "";
 
-        return articleCategory.textContent || "";
+        return articleCategory.textContent?.replace(/\s+/g, " ").trim() || "";
     }
 
     scrapeUrls() {

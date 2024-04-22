@@ -8,7 +8,6 @@ import {
 import { isWithinElapsed, isWithinRange } from "./utils/dates";
 import { normalizeUrl } from "./utils/urls";
 import logger from "./config/logger";
-import sleep from "./utils/sleep"; // Utility function to add delay between requests
 import { randomDelay } from "./utils";
 
 class Crawler {
@@ -111,8 +110,9 @@ class Crawler {
     }
 
     private async getHTMLBody(url: string): Promise<string | undefined> {
-        const maxDelay = 3000; // Maximum delay between requests in milliseconds
-        const minDelay = 10000;
+        const maxAttempts = 3;
+        const minDelay = 1000;
+        const maxDelay = 5000;
 
         const userAgentList = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
@@ -123,34 +123,44 @@ class Crawler {
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15",
         ];
-        const randomUserAgent =
-            userAgentList[Math.floor(Math.random() * userAgentList.length)];
-        try {
-            await randomDelay(minDelay, maxDelay);
-            const response: Response = await fetch(url, {
-                headers: {
-                    "User-Agent": randomUserAgent,
-                },
-            });
-            if (response.status > 399) {
-                logger.info(`error in fetch: ${url} ${response.status}`);
-                return;
-            }
 
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("text/html")) {
-                logger.info(`expected text/html but got ${contentType}`);
-                return;
-            }
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            const randomUserAgent =
+                userAgentList[Math.floor(Math.random() * userAgentList.length)];
+            try {
+                await randomDelay(minDelay, maxDelay);
 
-            const responseText = await response.text();
-            return responseText;
-        } catch (error) {
-            if (error instanceof Error) {
-                console.error(error.message);
+                const response: Response = await fetch(url, {
+                    headers: {
+                        "User-Agent": randomUserAgent,
+                    },
+                });
+
+                if (response.status > 399) {
+                    logger.info(
+                        `error in fetch: ${url} ${response.status} ${randomUserAgent}`
+                    );
+                    continue;
+                }
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("text/html")) {
+                    logger.info(`expected text/html but got ${contentType}`);
+                    continue;
+                }
+
+                const responseText = await response.text();
+                return responseText;
+            } catch (error) {
+                if (attempt === maxAttempts) {
+                    logger.error(`error fetching ${url}`);
+                    return;
+                }
             }
-            return;
         }
+
+        logger.error(`error fetching ${url}`);
+        return;
     }
 
     private checkDate(article: ArticleT | ArticleLinkT, dateInput: DateInput) {

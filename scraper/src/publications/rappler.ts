@@ -1,3 +1,4 @@
+import logger from "../config/logger";
 import RapplerScraper from "../scrapers/rappler";
 import { ArticleT, PublicationI, ScraperI } from "../types";
 import BasePublication from "./base";
@@ -34,10 +35,7 @@ class Rappler extends BasePublication implements PublicationI {
             year: "numeric",
             day: "2-digit",
         });
-        this.articlesQueue = `rappler:articles:${formattedDate
-            .toLowerCase()
-            .replace(/ /g, "-")
-            .replace(/,/g, "")}`;
+        this.articlesQueue = `articles`;
         this.scrapedUrlsKey = `rappler:article_urls:${formattedDate
             .toLowerCase()
             .replace(/ /g, "-")
@@ -45,13 +43,22 @@ class Rappler extends BasePublication implements PublicationI {
     }
 
     async saveArticle(article: ArticleT) {
-        const exists = this.redis?.sismember(
-            this.scrapedUrlsKey,
-            article.articleUrl
-        );
-        if (!exists) {
-            this.redis?.sadd(this.scrapedUrlsKey, article.articleUrl);
-            this.redis?.lpush(this.articlesQueue, JSON.stringify(article));
+        try {
+            logger.info(`Article found ${article.articleUrl}`);
+            const exists = await this.redis?.sismember(
+                this.scrapedUrlsKey,
+                article.articleUrl
+            );
+
+            if (exists) return;
+
+            await this.redis?.sadd(this.scrapedUrlsKey, article.articleUrl);
+            await this.redis?.lpush(
+                this.articlesQueue,
+                JSON.stringify(article)
+            );
+        } catch (error) {
+            logger.error(error);
         }
     }
 

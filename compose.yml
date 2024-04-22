@@ -22,6 +22,13 @@ services:
       - redis:/data
     ports:
       - 6379:6379
+  elasticsearch:
+    image: elasticsearch:7.17.20
+    volumes:
+      - es:/data
+    ports:
+      - 9200:9200
 volumes:
   data:
   redis:
+  es:

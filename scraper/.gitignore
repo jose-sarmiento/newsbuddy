@@ -3,3 +3,4 @@ src/dump
 dist
 *.log
 package-lock.json
+.env

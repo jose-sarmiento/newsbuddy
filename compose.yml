@@ -8,6 +8,8 @@ services:
     depends_on:
       - redis
       - mongo
+    env_file:
+      - scraper/.env
     command: npm run dev rappler -- --elapse=360
   mongo:
     image: mongo
@@ -24,6 +26,8 @@ services:
       - 6379:6379
   elasticsearch:
     image: elasticsearch:7.17.20
+    environment:
+      - discovery.type=single-node
     volumes:
       - es:/data
     ports:

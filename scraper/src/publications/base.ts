@@ -1,18 +1,14 @@
-import { Redis } from "ioredis";
-import { connectRedis } from "../config/redis";
+// import { Redis } from "ioredis";
+import { connectRedis } from "../db/redis";
 
 class BasePublication {
-    public redis: Redis | undefined;
+    public redis: any;
     constructor() {
         this.init();
     }
 
     private async init() {
         this.redis = await connectRedis();
-    }
-
-    async closeConnections() {
-        await this.redis?.quit();
     }
 }
 

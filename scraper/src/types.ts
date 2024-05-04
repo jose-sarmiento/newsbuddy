@@ -1,3 +1,10 @@
+export type SettingsT = {
+    timezone: string;
+    redis_host: string;
+    redis_port: number;
+    redis_database: number;
+};
+
 export type ScrapeUrls = { [key: string]: number };
 
 export interface PublicationI {
@@ -13,8 +20,6 @@ export interface PublicationI {
     getScraper: (html: string, publication: PublicationI) => ScraperI;
 
     getExistingUrls: () => ScrapeUrls;
-
-    closeConnections: () => void;
 }
 
 export interface ScraperI {

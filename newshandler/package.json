@@ -1,7 +1,7 @@
 {
-  "name": "syncher",
+  "name": "newshandler",
   "version": "1.0.0",
-  "description": "Syncher | Daily News Buddy",
+  "description": "News Handler | Daily News Buddy",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -23,7 +23,6 @@
   "dependencies": {
     "@elastic/elasticsearch": "^8.13.1",
     "dotenv": "^16.4.5",
-    "i": "^0.3.7",
     "ioredis": "^5.3.2",
     "mongodb": "^6.5.0",
     "mongoose": "^8.3.3",

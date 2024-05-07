@@ -8,9 +8,20 @@ services:
     depends_on:
       - redis
       - mongo
+      - elasticsearch
     env_file:
       - scraper/.env
     command: npm run dev rappler -- --elapse=360
+  llm:
+    build:
+      context: ./llm
+      dockerfile: Dockerfile
+    volumes:
+      - ./llm:/app
+    env_file:
+      - llm/.env
+    ports:
+      - 8000:8000
   mongo:
     image: mongo
     restart: always

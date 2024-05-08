@@ -6,6 +6,8 @@ declare global {
             REDIS_HOST: string;
             REDIS_PORT: number;
             REDIS_DATABASE: number;
+            LLM_API: string;
+            ES_URI: string;
         }
     }
 }

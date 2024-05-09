@@ -1,5 +1,5 @@
 import { Schema, model, connect, now } from "mongoose";
-
+ 
 interface INews {
     title: string;
     content: string;
@@ -8,6 +8,7 @@ interface INews {
     articleUrl: string;
     datePublished: Date;
     dateCreated: Date;
+    summary: string;
 }
 
 const newsSchema = new Schema<INews>({
@@ -18,6 +19,7 @@ const newsSchema = new Schema<INews>({
     articleUrl: { type: String, required: true },
     datePublished: { type: Date, required: true },
     dateCreated: { type: Date, default: now() },
+    summary: {type: String, required: true}
 });
 
 newsSchema.set("toJSON", {

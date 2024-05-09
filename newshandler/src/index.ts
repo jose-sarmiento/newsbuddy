@@ -4,40 +4,110 @@ import logger from "./config/logger";
 import { closeRedis, connectRedis } from "./db/redis";
 import { News } from "./models/news";
 import { connectMongo } from "./db/mongoose_connect";
-import { Settings } from "./config/settings";
 import mongoose from "mongoose";
 import { connectElasticsearch } from "./db/es";
 import { ArticleT } from "./types";
+import { Redis } from "ioredis";
+import { generateSummary } from "./lib/summary";
+import {
+    ARTICLES_DONE_QUEUE,
+    ARTICLES_FAILED_QUEUE,
+    ARTICLES_PENDING_QUEUE,
+    ARTICLES_PROCESSING_QUEUE,
+} from "./constants";
 
-async function run() {
-    connectMongo();
-    const esClient = connectElasticsearch();
-    const redis = await connectRedis();
-
-    const articles = await redis.lrange(Settings.articleQueueKey, 1, 1);
-    if (!articles || articles.length === 0) return;
-
-    const newsArticle: ArticleT | undefined = JSON.parse(articles[0]);
-    if (!newsArticle) {
-        logger.info(`Cannot parse article, got ${articles}`);
-        return;
-    }
-
-    logger.info(`Processing url: ${newsArticle.articleUrl}`);
-
-    const news = await News.create(newsArticle);
-
-    await esClient.index({
-        index: "articles",
-        document: news.toJSON(),
-    });
-
-    logger.info(`Success processing url: ${news.articleUrl}`);
+async function getItemFromQueue(
+    redis: Redis,
+    source: string,
+    desination: string,
+    timeout = 20
+) {
+    return await redis.brpoplpush(source, desination, timeout);
 }
 
-run()
-    .catch((error) => logger.error(error))
-    .finally(async () => {
-        await closeRedis();
-        await mongoose.disconnect();
+async function reQueue(redis: Redis, desination: string, element: string) {
+    await redis.lpush(desination, element);
+}
+
+async function removeFromQueue(redis: Redis, source: string, element: string) {
+    await redis.lrem(source, 1, element);
+}
+
+function sleep(ms: number) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
     });
+}
+
+async function run() {
+    let newsArticle: ArticleT | undefined;
+    let redis: Redis | undefined = undefined;
+
+    connectMongo();
+    redis = await connectRedis();
+    const esClient = connectElasticsearch();
+
+    while (true) {
+        try {
+            const rawArticle = await getItemFromQueue(
+                redis,
+                ARTICLES_PENDING_QUEUE,
+                ARTICLES_PROCESSING_QUEUE
+            );
+
+            if (!rawArticle) {
+                sleep(120);
+                continue;
+            }
+
+            newsArticle = JSON.parse(rawArticle);
+            if (!newsArticle) {
+                logger.info(`Cannot parse article, got ${rawArticle}`);
+                await reQueue(redis, ARTICLES_FAILED_QUEUE, rawArticle);
+                continue;
+            }
+
+            const exists = await News.findOne({
+                articleUrl: newsArticle.articleUrl,
+            });
+            if (exists) {
+                await removeFromQueue(
+                    redis,
+                    ARTICLES_PROCESSING_QUEUE,
+                    rawArticle
+                );
+                continue;
+            }
+
+            logger.info(`Processing url: ${newsArticle.articleUrl}`);
+
+            const summary = await generateSummary(newsArticle.content);
+            if (!summary) {
+                console.log("Failed on generating summary");
+                await reQueue(redis, ARTICLES_FAILED_QUEUE, rawArticle);
+                continue;
+            }
+
+            const news = await News.create({ ...newsArticle, summary });
+
+            await esClient.index({
+                index: "articles",
+                document: news.toJSON(),
+            });
+
+            await removeFromQueue(redis, ARTICLES_PROCESSING_QUEUE, rawArticle);
+            await reQueue(redis, ARTICLES_DONE_QUEUE, newsArticle.articleUrl);
+            logger.info(`Success processing url: ${news.articleUrl}`);
+        } catch (error) {
+            console.log(error)
+            if (newsArticle && redis) {
+                redis.lpush("articles:failed", JSON.stringify(newsArticle));
+            }
+        }
+    }
+}
+
+run().catch(error => console.log(error)).finally(async () => {
+    await closeRedis();
+    await mongoose.disconnect();
+});

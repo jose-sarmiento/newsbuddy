@@ -18,6 +18,7 @@ export type ArticleT = {
     articleUrl: string;
     images?: string[];
     videos?: string[];
+    summary?: string;
 };
 
 export type AricleWIthId = ArticleT & {
@@ -35,4 +36,12 @@ export class DBArticle {
         public articleUrl: string,
         public images?: string[]
     ) {}
+}
+
+export interface ISummaryResponse {
+    success: boolean
+    message: string
+    data: {
+        summary_text: string
+    }
 }

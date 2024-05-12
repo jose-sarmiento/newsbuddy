@@ -1,3 +1,5 @@
+version: '2.1'
+
 services:
   scraper:  
     build:
@@ -28,13 +30,18 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - data:/data      
+      - data:/data
   redis:
     image: redis
     volumes:
       - redis:/data
     ports:
       - 6379:6379
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
   elasticsearch:
     image: elasticsearch:7.17.20
     environment:
@@ -43,6 +50,27 @@ services:
       - es:/data
     ports:
       - 9200:9200
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://elasticsearch:9200"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  newshandler:
+    build:
+      context: ./newshandler
+      dockerfile: Dockerfile
+    volumes:
+      - ./newshandler:/newshandler/app
+    env_file:
+      - newshandler/.env
+    command: npm start
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      llm:
+        condition: service_started
 volumes:
   data:
   redis:

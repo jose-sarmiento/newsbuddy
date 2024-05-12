@@ -2,11 +2,10 @@ from transformers import pipeline
 from fastapi import FastAPI, Response, status
 
 from schema.summarizer import SummarizeRequest
+from load_model import summarizer
 
 
 app = FastAPI()
-
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 @app.post("/summarize")
 def summarize(summarize_request: SummarizeRequest, response: Response):

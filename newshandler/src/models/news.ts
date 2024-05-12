@@ -16,7 +16,7 @@ const newsSchema = new Schema<INews>({
     content: { type: String, required: true },
     images: { type: [String], required: true },
     category: { type: String, required: true },
-    articleUrl: { type: String, required: true },
+    articleUrl: { type: String, required: true, unique: true },
     datePublished: { type: Date, required: true },
     dateCreated: { type: Date, default: now() },
     summary: {type: String, required: true}

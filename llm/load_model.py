@@ -31,3 +31,30 @@ model = BartForConditionalGeneration.from_pretrained("./llm_model/models--facebo
 tokenizer = BartTokenizer.from_pretrained("./llm_model/models--facebook--bart-large-cnn/snapshots/37f520fa929c961707657b28798b30c003dd100b/")
 
 summarizer = pipeline("summarization", model=model, tokenizer=tokenizer)
+
+def safe_summarize(texts):
+    summaries = []
+    for text in texts:
+        num_words = len(text.split(" "))
+        min_length = max(1, int(num_words * 0.20))
+        max_length = max(1, int(num_words * 0.50))
+
+        try:
+            summary = summarizer([text], max_length=max_length, min_length=min_length, do_sample=False)
+            summaries.append(summary[0]["summary_text"])
+        except Exception as e:
+            if str(e) == "index out of range in self":
+                # Split the text into two at the nearest sentence end.
+                sentences = text.split(". ")
+                mid_point = len(sentences) // 2
+                part1 = " ".join(sentences[:mid_point])
+                part2 = " ".join(sentences[mid_point:])
+                # Recurse for each part and combine the results
+                summaries.extend(safe_summarize([part1, part2]))
+            else:
+                return []
+            
+    if summaries:
+        return summaries
+    else:
+        return []

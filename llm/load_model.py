@@ -32,29 +32,32 @@ tokenizer = BartTokenizer.from_pretrained("./llm_model/models--facebook--bart-la
 
 summarizer = pipeline("summarization", model=model, tokenizer=tokenizer)
 
-def safe_summarize(texts):
-    summaries = []
-    for text in texts:
-        num_words = len(text.split(" "))
-        min_length = max(1, int(num_words * 0.20))
-        max_length = max(1, int(num_words * 0.50))
-
-        try:
-            summary = summarizer([text], max_length=max_length, min_length=min_length, do_sample=False)
-            summaries.append(summary[0]["summary_text"])
-        except Exception as e:
-            if str(e) == "index out of range in self":
-                # Split the text into two at the nearest sentence end.
-                sentences = text.split(". ")
-                mid_point = len(sentences) // 2
-                part1 = " ".join(sentences[:mid_point])
-                part2 = " ".join(sentences[mid_point:])
-                # Recurse for each part and combine the results
-                summaries.extend(safe_summarize([part1, part2]))
-            else:
-                return []
-            
-    if summaries:
-        return summaries
+def get_first_500_words(text):
+    words = text.split()
+    if len(words) > 500:
+        first_500_words = ' '.join(words[:500])
+        last_period_index = first_500_words.rfind('.')
+        if last_period_index != -1:
+            return first_500_words[:last_period_index + 1]
+        else:
+            return first_500_words
     else:
-        return []
+        return text
+    
+def split_text_into_chunks(text):
+    words = text.split()
+    num_chunks = len(words) // 500
+    chunks = []
+
+    for i in range(num_chunks):
+        chunk_start = i * 500
+        chunk_end = (i + 1) * 500
+        chunk = ' '.join(words[chunk_start:chunk_end])
+        chunks.append(chunk)
+
+    # Check if there are remaining words after the last complete chunk
+    remaining_words = words[num_chunks * 500:]
+    if len(remaining_words) >= 50 or len(chunks) == 0:
+        chunks.append(' '.join(remaining_words))
+
+    return chunks

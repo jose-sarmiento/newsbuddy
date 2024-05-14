@@ -1,6 +1,86 @@
-version: '2.1'
-
 services:
+  llm:
+    build:
+      context: ./llm
+      dockerfile: Dockerfile
+    volumes:
+      - ./llm:/app
+    env_file:
+      - llm/.env
+    ports:
+      - 8000:8000
+
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis
+    volumes:
+      - redis:/data
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+
+  elasticsearch:
+    image: elasticsearch:7.17.20
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+    deploy:
+      resources:
+        limits:
+          memory: 2048m
+    volumes:
+      - es01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://elasticsearch:9200"]
+      interval: 30s
+      timeout: 5s
+      retries: 2
+
+  newshandler_setup:
+    build:
+      context: ./newshandler
+      dockerfile: Dockerfile
+    volumes:
+      - ./newshandler:/newshandler/app
+    env_file:
+      - newshandler/.env
+    command: npm run setup
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      llm:
+        condition: service_started
+        
+  newshandler:
+    build:
+      context: ./newshandler
+      dockerfile: Dockerfile
+    volumes:
+      - ./newshandler:/newshandler/app
+    env_file:
+      - newshandler/.env
+    command: npm start
+    depends_on:
+      - newshandler_setup
+    deploy:
+      mode: replicated
+      replicas: 5
+      
   scraper:  
     build:
       context: ./scraper
@@ -14,64 +94,7 @@ services:
     env_file:
       - scraper/.env
     command: npm run dev rappler -- --elapse=360
-  llm:
-    build:
-      context: ./llm
-      dockerfile: Dockerfile
-    volumes:
-      - ./llm:/app
-    env_file:
-      - llm/.env
-    ports:
-      - 8000:8000
-  mongo:
-    image: mongo
-    restart: always
-    ports:
-      - 27017:27017
-    volumes:
-      - data:/data
-  redis:
-    image: redis
-    volumes:
-      - redis:/data
-    ports:
-      - 6379:6379
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
-      interval: 1s
-      timeout: 3s
-      retries: 5
-  elasticsearch:
-    image: elasticsearch:7.17.20
-    environment:
-      - discovery.type=single-node
-    volumes:
-      - es:/data
-    ports:
-      - 9200:9200
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://elasticsearch:9200"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-  newshandler:
-    build:
-      context: ./newshandler
-      dockerfile: Dockerfile
-    volumes:
-      - ./newshandler:/newshandler/app
-    env_file:
-      - newshandler/.env
-    command: npm start
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      llm:
-        condition: service_started
 volumes:
-  data:
+  mongo_data:
   redis:
-  es:
+  es01:

@@ -35,7 +35,7 @@ class Rappler extends BasePublication implements PublicationI {
             year: "numeric",
             day: "2-digit",
         });
-        this.articlesQueue = `articles`;
+        this.articlesQueue = `articles:pending`;
         this.scrapedUrlsKey = `rappler:article_urls:${formattedDate
             .toLowerCase()
             .replace(/ /g, "-")

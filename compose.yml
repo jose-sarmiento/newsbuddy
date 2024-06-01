@@ -54,7 +54,7 @@ services:
       context: ./newshandler
       dockerfile: Dockerfile
     volumes:
-      - ./newshandler:/newshandler/app
+      - ./newshandler:/newshandler
     env_file:
       - newshandler/.env
     command: npm run setup
@@ -65,22 +65,24 @@ services:
         condition: service_healthy
       llm:
         condition: service_started
+      mongo:
+        condition: service_started
         
   newshandler:
     build:
       context: ./newshandler
       dockerfile: Dockerfile
     volumes:
-      - ./newshandler:/newshandler/app
+      - ./newshandler:/newshandler
     env_file:
       - newshandler/.env
-    command: npm start
+    command: npm run devStart
     depends_on:
       - newshandler_setup
     deploy:
       mode: replicated
-      replicas: 5
-      
+      replicas: 2
+
   scraper:  
     build:
       context: ./scraper
@@ -88,9 +90,7 @@ services:
     volumes:
       - ./scraper:/app
     depends_on:
-      - redis
-      - mongo
-      - elasticsearch
+      - newshandler_setup
     env_file:
       - scraper/.env
     command: npm run dev rappler -- --elapse=360

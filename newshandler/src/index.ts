@@ -15,6 +15,7 @@ import {
     ARTICLES_PENDING_QUEUE,
     ARTICLES_PROCESSING_QUEUE,
 } from "./constants";
+import { MongoServerError } from "mongodb";
 
 async function getItemFromQueue(
     redis: Redis,
@@ -40,27 +41,27 @@ function sleep(ms: number) {
 }
 
 async function run() {
-    let newsArticle: ArticleT | undefined;
     let redis: Redis | undefined = undefined;
 
     connectMongo();
     redis = await connectRedis();
     const esClient = connectElasticsearch();
+    let rawArticle;
 
     while (true) {
         try {
-            const rawArticle = await getItemFromQueue(
+            rawArticle = await getItemFromQueue(
                 redis,
                 ARTICLES_PENDING_QUEUE,
                 ARTICLES_PROCESSING_QUEUE
             );
-
+          
             if (!rawArticle) {
                 sleep(120);
                 continue;
             }
 
-            newsArticle = JSON.parse(rawArticle);
+            const newsArticle: ArticleT | undefined = JSON.parse(rawArticle);
             if (!newsArticle) {
                 logger.info(`Cannot parse article, got ${rawArticle}`);
                 await reQueue(redis, ARTICLES_FAILED_QUEUE, rawArticle);
@@ -71,6 +72,7 @@ async function run() {
                 articleUrl: newsArticle.articleUrl,
             });
             if (exists) {
+                console.log("Article already exists")
                 await removeFromQueue(
                     redis,
                     ARTICLES_PROCESSING_QUEUE,
@@ -87,7 +89,7 @@ async function run() {
                 await reQueue(redis, ARTICLES_FAILED_QUEUE, rawArticle);
                 continue;
             }
-
+            
             const news = await News.create({ ...newsArticle, summary });
 
             await esClient.index({
@@ -99,9 +101,17 @@ async function run() {
             await reQueue(redis, ARTICLES_DONE_QUEUE, newsArticle.articleUrl);
             logger.info(`Success processing url: ${news.articleUrl}`);
         } catch (error) {
-            console.log(error)
-            if (newsArticle && redis) {
-                redis.lpush("articles:failed", JSON.stringify(newsArticle));
+            if (rawArticle) {
+                if (error instanceof Error && error.message.startsWith("E11000 duplicate key error")) {
+                    console.log("Article already exists")
+                    await removeFromQueue(
+                        redis,
+                        ARTICLES_PROCESSING_QUEUE,
+                        rawArticle
+                    );
+                    continue;
+                }
+                redis.lpush("articles:failed", rawArticle);
             }
         }
     }

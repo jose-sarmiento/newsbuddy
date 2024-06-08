@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router } from "express";
 
-import joinUsRouter from './join-us';
+import newsRouter from "./news";
 
 export default function () {
     const app = Router();
 
-    joinUsRouter(app);
+    app.use("/news", newsRouter);
 
     return app;
 }

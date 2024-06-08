@@ -94,6 +94,18 @@ services:
     env_file:
       - scraper/.env
     command: npm run dev rappler -- --elapse=360
+
+  api:
+    build: 
+      context: api
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./api:/api
+    ports:
+      - 3000:3000
+    depends_on:
+      - elasticsearch
+      - mongo
 volumes:
   mongo_data:
   redis:
